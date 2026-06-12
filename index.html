@@ -27,12 +27,12 @@
 
         #hint {
             position: fixed;
-            top: 20px;
+            top: 10px;
             left: 50%;
             transform: translateX(-50%);
             color: rgba(255,255,255,0.7);
             font-family: sans-serif;
-            font-size: 13px;
+            font-size: 12px;
             background: rgba(0,0,0,0.5);
             padding: 6px 16px;
             border-radius: 15px;
@@ -50,191 +50,247 @@
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false">
 
-        <!-- 摄像头 + 屏幕点击射线 -->
         <a-camera
             position="0 0 0"
-            look-controls="enabled: false"
-            cursor="fuse: false; rayOrigin: mouse"
-            raycaster="objects: .clickable; far: 100">
+            look-controls="enabled: false">
         </a-camera>
 
         <!-- 图片1 -->
         <a-entity mindar-image-target="targetIndex: 0">
             <a-gltf-model
-                class="clickable"
                 id="model-0"
+                data-info="📚 图书馆模型"
                 src="library.glb"
                 position="0 0 0"
                 rotation="90 0 0"
-                scale="0.005 0.005 0.005"
-                model-interact="info: 📚 图书馆模型">
+                scale="0.005 0.005 0.005">
             </a-gltf-model>
         </a-entity>
 
         <!-- 图片2 -->
         <a-entity mindar-image-target="targetIndex: 1">
             <a-gltf-model
-                class="clickable"
                 id="model-1"
+                data-info="🗿 绿色头像"
                 src="head-green.glb"
                 position="0 0 0"
-                scale="0.1 0.1 0.1"
-                model-interact="info: 🗿 绿色头像">
+                scale="0.1 0.1 0.1">
             </a-gltf-model>
         </a-entity>
 
         <!-- 图片3 -->
         <a-entity mindar-image-target="targetIndex: 2">
             <a-gltf-model
-                class="clickable"
                 id="model-2"
+                data-info="📦 盒子模型"
                 src="box.glb"
                 position="0 0 0"
-                scale="0.1 0.1 0.1"
-                model-interact="info: 📦 盒子模型">
+                scale="0.1 0.1 0.1">
             </a-gltf-model>
         </a-entity>
 
         <!-- 图片4 -->
         <a-entity mindar-image-target="targetIndex: 3">
             <a-gltf-model
-                class="clickable"
                 id="model-3"
+                data-info="⚽ 球体模型"
                 src="ball.glb"
                 position="0 0 0"
-                scale="0.1 0.1 0.1"
-                model-interact="info: ⚽ 球体模型">
+                scale="0.1 0.1 0.1">
             </a-gltf-model>
         </a-entity>
 
     </a-scene>
 
     <script>
-        AFRAME.registerComponent('model-interact', {
-            schema: {
-                info: { type: 'string', default: '' }
-            },
+        (function () {
+            const sceneEl = document.querySelector('a-scene');
+            const labelEl = document.getElementById('info-label');
 
-            init: function () {
-                const el = this.el;
-                const self = this;
+            // 模型数据
+            const models = {};
+            const modelStates = {};   // 每个模型的交互状态
+            let activeModel = null;   // 当前被追踪到的模型
 
-                this.clickCount = 0;
-                this.clickTimer = null;
-                this.longPressTimer = null;
-                this.isVisible = false;
+            // ---- 场景就绪后收集所有模型引用 ----
+            sceneEl.addEventListener('loaded', function () {
+                for (let i = 0; i < 4; i++) {
+                    const el = document.getElementById('model-' + i);
+                    if (!el) continue;
+                    models[i] = el;
+                    modelStates[i] = {
+                        info: el.getAttribute('data-info') || ('模型 ' + i),
+                        origScale: el.getAttribute('scale').clone(),
+                        clickCount: 0,
+                        clickTimer: null,
+                        longPressTimer: null,
+                        bounceTimer: null,
+                        visible: false
+                    };
+                }
 
-                // ---- 追踪目标出现/消失 ----
-                el.addEventListener('targetFound', () => { self.isVisible = true; });
-                el.addEventListener('targetLost', () => {
-                    self.isVisible = false;
-                    self.hideInfo();
-                });
+                // ---- 监听每个目标图的出现/消失 ----
+                for (let i = 0; i < 4; i++) {
+                    const targetEl = document.querySelector('[mindar-image-target="targetIndex: ' + i + '"]');
+                    if (targetEl) {
+                        targetEl.addEventListener('targetFound', function () {
+                            modelStates[i].visible = true;
+                            activeModel = i;
+                        });
+                        targetEl.addEventListener('targetLost', function () {
+                            modelStates[i].visible = false;
+                            if (activeModel === i) activeModel = null;
+                            labelEl.classList.remove('visible');
+                        });
+                    }
+                }
+            });
 
-                // ---- 光标悬停高亮 ----
-                el.addEventListener('mouseenter', () => {
-                    if (!self.isVisible) return;
-                    el.setAttribute('scale', {
-                        x: parseFloat(el.getAttribute('scale').x) * 1.1,
-                        y: parseFloat(el.getAttribute('scale').y) * 1.1,
-                        z: parseFloat(el.getAttribute('scale').z) * 1.1
-                    });
-                });
-                el.addEventListener('mouseleave', () => {
-                    if (!self.isVisible) return;
-                    el.setAttribute('scale', {
-                        x: parseFloat(el.getAttribute('scale').x) / 1.1,
-                        y: parseFloat(el.getAttribute('scale').y) / 1.1,
-                        z: parseFloat(el.getAttribute('scale').z) / 1.1
-                    });
-                });
+            // ---- 核心: 屏幕坐标 → 射线检测 → 找到命中的模型 ----
+            function getModelAtScreen(x, y) {
+                const camera = sceneEl.camera;
+                if (!camera) return null;
 
-                // ---- 点击: 弹跳动画 ----
-                el.addEventListener('click', (e) => {
-                    if (!self.isVisible) return;
-                    self.clickCount++;
-                    clearTimeout(self.clickTimer);
-                    self.clickTimer = setTimeout(() => {
-                        if (self.clickCount === 1) {
-                            self.bounce();           // 单击 → 弹跳
-                        } else if (self.clickCount >= 2) {
-                            self.resetModel();       // 双击 → 重置
-                        }
-                        self.clickCount = 0;
-                    }, 300);
-                });
+                // 归一化设备坐标
+                const rect = sceneEl.canvas.getBoundingClientRect();
+                const ndcX = ((x - rect.left) / rect.width)  * 2 - 1;
+                const ndcY = -((y - rect.top)  / rect.height) * 2 + 1;
 
-                // ---- 长按: 显示信息 (PC鼠标版) ----
-                el.addEventListener('mousedown', () => {
-                    if (!self.isVisible) return;
-                    self.longPressTimer = setTimeout(() => self.showInfo(), 800);
-                });
-                el.addEventListener('mouseup',   () => clearTimeout(self.longPressTimer));
-                el.addEventListener('mouseleave',() => { clearTimeout(self.longPressTimer); self.hideInfo(); });
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
 
-                // ---- 长按: 显示信息 (移动端触摸版) ----
-                el.addEventListener('touchstart', () => {
-                    if (!self.isVisible) return;
-                    self.longPressTimer = setTimeout(() => self.showInfo(), 800);
-                });
-                el.addEventListener('touchend', () => {
-                    clearTimeout(self.longPressTimer);
-                    self.hideInfo();
-                });
-            },
+                // 收集所有模型的三维对象
+                const targets = [];
+                for (let i = 0; i < 4; i++) {
+                    if (models[i] && modelStates[i].visible && models[i].object3D) {
+                        targets.push(models[i].object3D);
+                    }
+                }
+                const intersects = raycaster.intersectObjects(targets, true);
+                if (intersects.length === 0) return null;
 
-            // 弹跳效果
-            bounce: function () {
-                const el = this.el;
-                const s = el.getAttribute('scale');
-                const orig = { x: s.x, y: s.y, z: s.z };
+                // 追溯到顶层模型元素
+                let obj = intersects[0].object;
+                while (obj) {
+                    for (let i = 0; i < 4; i++) {
+                        if (models[i] && obj === models[i].object3D) return i;
+                    }
+                    obj = obj.parent;
+                }
+                return null;
+            }
 
-                // 保存原始缩放
-                if (!this._origScale) this._origScale = orig;
+            // ---- 点击/触摸 事件处理 ----
+            function handlePointerDown(e) {
+                const x = e.touches ? e.touches[0].clientX : e.clientX;
+                const y = e.touches ? e.touches[0].clientY : e.clientY;
+                const idx = getModelAtScreen(x, y);
+                if (idx === null) return;
+
+                const st = modelStates[idx];
+                // 启动长按计时器
+                clearTimeout(st.longPressTimer);
+                st.longPressTimer = setTimeout(function () {
+                    showInfo(idx);
+                }, 800);
+            }
+
+            function handlePointerUp(e) {
+                const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+                const y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+                const idx = getModelAtScreen(x, y);
+
+                for (let i = 0; i < 4; i++) {
+                    clearTimeout(modelStates[i].longPressTimer);
+                }
+
+                if (idx === null) {
+                    labelEl.classList.remove('visible');
+                    return;
+                }
+
+                // 单击/双击判断
+                const st = modelStates[idx];
+                st.clickCount++;
+                clearTimeout(st.clickTimer);
+                st.clickTimer = setTimeout(function () {
+                    if (st.clickCount === 1) {
+                        bounce(idx);
+                    } else if (st.clickCount >= 2) {
+                        resetModel(idx);
+                    }
+                    st.clickCount = 0;
+                }, 300);
+            }
+
+            // ---- 绑定到 a-scene 的 canvas ----
+            sceneEl.addEventListener('loaded', function () {
+                setTimeout(function () {
+                    const canvas = sceneEl.canvas;
+                    canvas.addEventListener('mousedown',  handlePointerDown);
+                    canvas.addEventListener('mouseup',    handlePointerUp);
+                    canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+                    canvas.addEventListener('touchend',   handlePointerUp);
+                }, 500);
+            });
+
+            // ---- 弹跳 ----
+            function bounce(idx) {
+                const el = models[idx];
+                const st = modelStates[idx];
+                if (!el || !st) return;
+
+                clearInterval(st.bounceTimer);
+                const orig = {
+                    x: st.origScale.x,
+                    y: st.origScale.y,
+                    z: st.origScale.z
+                };
 
                 let step = 0;
                 const total = 10;
-                const height = 0.3;
-                const timer = setInterval(() => {
+                const amp = orig.y * 0.4;
+                st.bounceTimer = setInterval(function () {
                     if (step >= total) {
-                        clearInterval(timer);
+                        clearInterval(st.bounceTimer);
                         el.setAttribute('scale', orig);
                         return;
                     }
                     const t = step / total;
-                    const bounceY = Math.sin(t * Math.PI) * height;
+                    const dy = Math.sin(t * Math.PI) * amp;
                     el.setAttribute('scale', {
-                        x: orig.x + bounceY,
-                        y: orig.y + bounceY,
-                        z: orig.z + bounceY
+                        x: orig.x + dy,
+                        y: orig.y + dy,
+                        z: orig.z + dy
                     });
                     step++;
                 }, 50);
 
                 if (navigator.vibrate) navigator.vibrate(15);
-            },
-
-            // 重置模型到初始状态
-            resetModel: function () {
-                if (this._origScale) {
-                    this.el.setAttribute('scale', this._origScale);
-                }
-                if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
-            },
-
-            // 信息标签
-            showInfo: function () {
-                const label = document.getElementById('info-label');
-                label.textContent = this.data.info;
-                label.classList.add('visible');
-                if (navigator.vibrate) navigator.vibrate(30);
-                setTimeout(() => this.hideInfo(), 2000);
-            },
-
-            hideInfo: function () {
-                document.getElementById('info-label').classList.remove('visible');
             }
-        });
+
+            // ---- 重置 ----
+            function resetModel(idx) {
+                const st = modelStates[idx];
+                if (!st) return;
+                clearInterval(st.bounceTimer);
+                st.clickCount = 0;
+                models[idx].setAttribute('scale', st.origScale);
+                if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
+            }
+
+            // ---- 长按信息标签 ----
+            function showInfo(idx) {
+                const st = modelStates[idx];
+                if (!st) return;
+                labelEl.textContent = st.info;
+                labelEl.classList.add('visible');
+                if (navigator.vibrate) navigator.vibrate(30);
+                setTimeout(function () {
+                    labelEl.classList.remove('visible');
+                }, 2000);
+            }
+        })();
     </script>
 </body>
 </html>
