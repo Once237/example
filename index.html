@@ -7,10 +7,9 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-        /* 信息标签样式 */
         #info-label {
             position: fixed;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0,0,0,0.8);
@@ -24,46 +23,8 @@
             transition: opacity 0.3s;
             z-index: 100;
         }
-        #info-label.visible {
-            opacity: 1;
-        }
+        #info-label.visible { opacity: 1; }
 
-        /* 模型切换按钮 */
-        #switch-btns {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 20px;
-            z-index: 100;
-            pointer-events: none;
-        }
-        #switch-btns.active {
-            pointer-events: auto;
-        }
-        .switch-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.7);
-            background: rgba(0,0,0,0.5);
-            color: #fff;
-            font-size: 20px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-        }
-        #switch-btns.active .switch-btn {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        /* 提示文字 */
         #hint {
             position: fixed;
             top: 20px;
@@ -81,261 +42,198 @@
 </head>
 
 <body>
-    <!-- 提示 -->
-    <div id="hint">👆 点击模型变色 | 👆👆 双击重置 | ↔ 滑动切换 | 📌 长按看信息</div>
-    <!-- 信息标签 -->
+    <div id="hint">👆 点击弹跳 | 👆👆 双击重置 | 📌 长按看信息</div>
     <div id="info-label"></div>
-    <!-- 模型切换按钮 -->
-    <div id="switch-btns">
-        <button class="switch-btn" id="btn-prev">◀</button>
-        <button class="switch-btn" id="btn-next">▶</button>
-    </div>
 
     <a-scene
         mindar-image="imageTargetSrc: ./targets.mind;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false">
 
+        <!-- 摄像头 + 屏幕点击射线 -->
         <a-camera
             position="0 0 0"
-            look-controls="enabled: false">
+            look-controls="enabled: false"
+            cursor="fuse: false; rayOrigin: mouse"
+            raycaster="objects: .clickable; far: 100">
         </a-camera>
 
-        <!-- 图片1: library 系列 -->
+        <!-- 图片1 -->
         <a-entity mindar-image-target="targetIndex: 0">
             <a-gltf-model
+                class="clickable"
                 id="model-0"
                 src="library.glb"
                 position="0 0 0"
                 rotation="90 0 0"
                 scale="0.005 0.005 0.005"
-                gesture-interactive="modelIndex: 0; modelSrcs: library.glb,head-green.glb,box.glb,ball.glb; modelPositions: 0 0 0|0 0 0|0 0 0|0 0 0; modelRotations: 90 0 0|0 0 0|0 0 0|0 0 0; modelScales: 0.005 0.005 0.005|0.1 0.1 0.1|0.1 0.1 0.1|0.1 0.1 0.1; infoText: 📚 图书馆模型">
+                model-interact="info: 📚 图书馆模型">
             </a-gltf-model>
         </a-entity>
 
-        <!-- 图片2: head 系列 -->
+        <!-- 图片2 -->
         <a-entity mindar-image-target="targetIndex: 1">
             <a-gltf-model
+                class="clickable"
                 id="model-1"
                 src="head-green.glb"
                 position="0 0 0"
                 scale="0.1 0.1 0.1"
-                gesture-interactive="modelIndex: 1; modelSrcs: head-green.glb,library.glb,box.glb,ball.glb; modelPositions: 0 0 0|0 0 0|0 0 0|0 0 0; modelRotations: 0 0 0|90 0 0|0 0 0|0 0 0; modelScales: 0.1 0.1 0.1|0.005 0.005 0.005|0.1 0.1 0.1|0.1 0.1 0.1; infoText: 🗿 绿色头像">
+                model-interact="info: 🗿 绿色头像">
             </a-gltf-model>
         </a-entity>
 
-        <!-- 图片3: box 系列 -->
+        <!-- 图片3 -->
         <a-entity mindar-image-target="targetIndex: 2">
             <a-gltf-model
+                class="clickable"
                 id="model-2"
                 src="box.glb"
                 position="0 0 0"
                 scale="0.1 0.1 0.1"
-                gesture-interactive="modelIndex: 2; modelSrcs: box.glb,ball.glb,library.glb,head-green.glb; modelPositions: 0 0 0|0 0 0|0 0 0|0 0 0; modelRotations: 0 0 0|0 0 0|90 0 0|0 0 0; modelScales: 0.1 0.1 0.1|0.1 0.1 0.1|0.005 0.005 0.005|0.1 0.1 0.1; infoText: 📦 盒子模型">
+                model-interact="info: 📦 盒子模型">
             </a-gltf-model>
         </a-entity>
 
-        <!-- 图片4: ball 系列 -->
+        <!-- 图片4 -->
         <a-entity mindar-image-target="targetIndex: 3">
             <a-gltf-model
+                class="clickable"
                 id="model-3"
                 src="ball.glb"
                 position="0 0 0"
                 scale="0.1 0.1 0.1"
-                gesture-interactive="modelIndex: 3; modelSrcs: ball.glb,box.glb,head-green.glb,library.glb; modelPositions: 0 0 0|0 0 0|0 0 0|0 0 0; modelRotations: 0 0 0|0 0 0|0 0 0|90 0 0; modelScales: 0.1 0.1 0.1|0.1 0.1 0.1|0.1 0.1 0.1|0.005 0.005 0.005; infoText: ⚽ 球体模型">
+                model-interact="info: ⚽ 球体模型">
             </a-gltf-model>
         </a-entity>
 
     </a-scene>
 
     <script>
-        // ========================================
-        // 注册自定义交互组件
-        // ========================================
-        AFRAME.registerComponent('gesture-interactive', {
+        AFRAME.registerComponent('model-interact', {
             schema: {
-                modelIndex:    { type: 'int',    default: 0 },
-                modelSrcs:     { type: 'string', default: '' },
-                modelPositions:{ type: 'string', default: '' },
-                modelRotations:{ type: 'string', default: '' },
-                modelScales:   { type: 'string', default: '' },
-                infoText:      { type: 'string', default: '' }
+                info: { type: 'string', default: '' }
             },
 
             init: function () {
-                this.currentVariant = 0;
+                const el = this.el;
+                const self = this;
 
-                // 解析配置
-                this.srcs      = this.data.modelSrcs.split(',').map(s => s.trim());
-                this.positions = this.data.modelPositions.split('|').map(s => s.trim());
-                this.rotations = this.data.modelRotations.split('|').map(s => s.trim());
-                this.scales    = this.data.modelScales.split('|').map(s => s.trim());
-
-                this.originalColor = null;
                 this.clickCount = 0;
                 this.clickTimer = null;
                 this.longPressTimer = null;
-                this.touchStartPos = null;
-                this.isModelVisible = false;
+                this.isVisible = false;
 
-                const el = this.el;
+                // ---- 追踪目标出现/消失 ----
+                el.addEventListener('targetFound', () => { self.isVisible = true; });
+                el.addEventListener('targetLost', () => {
+                    self.isVisible = false;
+                    self.hideInfo();
+                });
 
-                // ---- 目标出现/消失 ----
-                const targetEntity = el.parentNode;
-                if (targetEntity) {
-                    targetEntity.addEventListener('targetFound', () => {
-                        this.isModelVisible = true;
-                        document.getElementById('switch-btns').classList.add('active');
+                // ---- 光标悬停高亮 ----
+                el.addEventListener('mouseenter', () => {
+                    if (!self.isVisible) return;
+                    el.setAttribute('scale', {
+                        x: parseFloat(el.getAttribute('scale').x) * 1.1,
+                        y: parseFloat(el.getAttribute('scale').y) * 1.1,
+                        z: parseFloat(el.getAttribute('scale').z) * 1.1
                     });
-                    targetEntity.addEventListener('targetLost', () => {
-                        this.isModelVisible = false;
-                        document.getElementById('switch-btns').classList.remove('active');
-                        this.hideInfo();
+                });
+                el.addEventListener('mouseleave', () => {
+                    if (!self.isVisible) return;
+                    el.setAttribute('scale', {
+                        x: parseFloat(el.getAttribute('scale').x) / 1.1,
+                        y: parseFloat(el.getAttribute('scale').y) / 1.1,
+                        z: parseFloat(el.getAttribute('scale').z) / 1.1
                     });
-                }
+                });
 
-                // ---- 点击变色 ----
+                // ---- 点击: 弹跳动画 ----
                 el.addEventListener('click', (e) => {
-                    if (!this.isModelVisible) return;
-                    this.clickCount++;
-                    clearTimeout(this.clickTimer);
-                    this.clickTimer = setTimeout(() => {
-                        if (this.clickCount === 1) {
-                            this.flashColor();       // 单击 → 变色
-                        } else if (this.clickCount >= 2) {
-                            this.resetAppearance();  // 双击 → 重置
+                    if (!self.isVisible) return;
+                    self.clickCount++;
+                    clearTimeout(self.clickTimer);
+                    self.clickTimer = setTimeout(() => {
+                        if (self.clickCount === 1) {
+                            self.bounce();           // 单击 → 弹跳
+                        } else if (self.clickCount >= 2) {
+                            self.resetModel();       // 双击 → 重置
                         }
-                        this.clickCount = 0;
+                        self.clickCount = 0;
                     }, 300);
                 });
 
-                // ---- 长按显示信息 ----
-                el.addEventListener('mousedown', (e) => {
-                    if (!this.isModelVisible) return;
-                    this.longPressTimer = setTimeout(() => {
-                        this.showInfo();
-                    }, 800);
+                // ---- 长按: 显示信息 (PC鼠标版) ----
+                el.addEventListener('mousedown', () => {
+                    if (!self.isVisible) return;
+                    self.longPressTimer = setTimeout(() => self.showInfo(), 800);
                 });
-                el.addEventListener('mouseup', () => {
-                    clearTimeout(this.longPressTimer);
-                });
-                el.addEventListener('mouseleave', () => {
-                    clearTimeout(this.longPressTimer);
-                    this.hideInfo();
-                });
+                el.addEventListener('mouseup',   () => clearTimeout(self.longPressTimer));
+                el.addEventListener('mouseleave',() => { clearTimeout(self.longPressTimer); self.hideInfo(); });
 
-                // ---- 触摸版长按 ----
-                el.addEventListener('touchstart', (e) => {
-                    if (!this.isModelVisible) return;
-                    this.touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-                    this.longPressTimer = setTimeout(() => {
-                        this.showInfo();
-                    }, 800);
+                // ---- 长按: 显示信息 (移动端触摸版) ----
+                el.addEventListener('touchstart', () => {
+                    if (!self.isVisible) return;
+                    self.longPressTimer = setTimeout(() => self.showInfo(), 800);
                 });
-                el.addEventListener('touchend', (e) => {
-                    clearTimeout(this.longPressTimer);
-                    if (this.touchStartPos && e.changedTouches.length > 0) {
-                        const dx = e.changedTouches[0].clientX - this.touchStartPos.x;
-                        const dy = e.changedTouches[0].clientY - this.touchStartPos.y;
-                        // 如果移动超过阈值，当作滑动
-                        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-                            if (dx > 0) {
-                                this.switchModel(-1); // 右滑 → 上一个
-                            } else {
-                                this.switchModel(1);  // 左滑 → 下一个
-                            }
-                        }
+                el.addEventListener('touchend', () => {
+                    clearTimeout(self.longPressTimer);
+                    self.hideInfo();
+                });
+            },
+
+            // 弹跳效果
+            bounce: function () {
+                const el = this.el;
+                const s = el.getAttribute('scale');
+                const orig = { x: s.x, y: s.y, z: s.z };
+
+                // 保存原始缩放
+                if (!this._origScale) this._origScale = orig;
+
+                let step = 0;
+                const total = 10;
+                const height = 0.3;
+                const timer = setInterval(() => {
+                    if (step >= total) {
+                        clearInterval(timer);
+                        el.setAttribute('scale', orig);
+                        return;
                     }
-                    this.touchStartPos = null;
-                    this.hideInfo();
-                });
+                    const t = step / total;
+                    const bounceY = Math.sin(t * Math.PI) * height;
+                    el.setAttribute('scale', {
+                        x: orig.x + bounceY,
+                        y: orig.y + bounceY,
+                        z: orig.z + bounceY
+                    });
+                    step++;
+                }, 50);
+
+                if (navigator.vibrate) navigator.vibrate(15);
             },
 
-            // ---- 变色闪烁 ----
-            flashColor: function () {
-                const el = this.el;
-                const colors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44', '#ff44ff', '#44ffff', '#ff8800'];
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                el.setAttribute('material', 'color', color);
-                setTimeout(() => {
-                    el.removeAttribute('material');
-                }, 600);
+            // 重置模型到初始状态
+            resetModel: function () {
+                if (this._origScale) {
+                    this.el.setAttribute('scale', this._origScale);
+                }
+                if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
             },
 
-            // ---- 重置外观 ----
-            resetAppearance: function () {
-                const el = this.el;
-                el.removeAttribute('material');
-                // 回到默认变体
-                this.currentVariant = 0;
-                this.applyVariant(0);
-            },
-
-            // ---- 显示信息标签 ----
+            // 信息标签
             showInfo: function () {
                 const label = document.getElementById('info-label');
-                label.textContent = this.data.infoText;
+                label.textContent = this.data.info;
                 label.classList.add('visible');
-                // 震动反馈（移动端）
-                if (navigator.vibrate) {
-                    navigator.vibrate(30);
-                }
+                if (navigator.vibrate) navigator.vibrate(30);
+                setTimeout(() => this.hideInfo(), 2000);
             },
 
             hideInfo: function () {
                 document.getElementById('info-label').classList.remove('visible');
-            },
-
-            // ---- 切换模型 ----
-            switchModel: function (direction) {
-                const len = this.srcs.length;
-                this.currentVariant = (this.currentVariant + direction + len) % len;
-                this.applyVariant(this.currentVariant);
-            },
-
-            applyVariant: function (idx) {
-                const el = this.el;
-                // 切换模型源
-                el.setAttribute('src', this.srcs[idx]);
-                // 切换位置
-                if (this.positions[idx]) {
-                    el.setAttribute('position', this.positions[idx]);
-                }
-                // 切换旋转
-                if (this.rotations[idx]) {
-                    el.setAttribute('rotation', this.rotations[idx]);
-                }
-                // 切换缩放
-                if (this.scales[idx]) {
-                    el.setAttribute('scale', this.scales[idx]);
-                }
-                // 短暂闪烁提示
-                this.flashColor();
             }
-        });
-
-        // ========================================
-        // UI 按钮绑定
-        // ========================================
-        document.getElementById('btn-prev').addEventListener('click', () => {
-            // 找到当前可见的模型并切换
-            const models = document.querySelectorAll('[gesture-interactive]');
-            models.forEach(m => {
-                if (m.components['gesture-interactive'] &&
-                    m.components['gesture-interactive'].isModelVisible) {
-                    m.components['gesture-interactive'].switchModel(-1);
-                }
-            });
-        });
-
-        document.getElementById('btn-next').addEventListener('click', () => {
-            const models = document.querySelectorAll('[gesture-interactive]');
-            models.forEach(m => {
-                if (m.components['gesture-interactive'] &&
-                    m.components['gesture-interactive'].isModelVisible) {
-                    m.components['gesture-interactive'].switchModel(1);
-                }
-            });
         });
     </script>
 </body>
