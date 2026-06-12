@@ -1,103 +1,108 @@
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ---- 顶部提示 ---- */
+        #hint {
+            position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.8); font-family: sans-serif; font-size: 11px;
+            background: rgba(0,0,0,0.55); padding: 5px 14px; border-radius: 12px;
+            z-index: 100; pointer-events: none;
+        }
+
+        /* ---- 信息标签 ---- */
         #info-label {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
-            color: #fff;
-            padding: 10px 24px;
-            border-radius: 25px;
-            font-family: sans-serif;
-            font-size: 16px;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 100;
+            position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.85); color: #fff; padding: 10px 24px;
+            border-radius: 22px; font-family: sans-serif; font-size: 15px;
+            pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 100;
         }
         #info-label.visible { opacity: 1; }
 
-        #hint {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255,255,255,0.7);
-            font-family: sans-serif;
-            font-size: 12px;
-            background: rgba(0,0,0,0.5);
-            padding: 6px 16px;
-            border-radius: 15px;
-            z-index: 100;
+        /* ---- 底部工具栏 ---- */
+        #toolbar {
+            position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 8px; z-index: 100;
+            background: rgba(0,0,0,0.6); padding: 8px 12px; border-radius: 28px;
+            flex-wrap: wrap; justify-content: center;
+        }
+        #toolbar button {
+            width: 44px; height: 44px; border-radius: 50%;
+            border: 1.5px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.1); color: #fff;
+            font-size: 18px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #toolbar button:active { background: rgba(255,255,255,0.3); }
+        #toolbar button.active { background: rgba(76,175,80,0.5); border-color: #4CAF50; }
+
+        /* ---- 状态指示 ---- */
+        #status {
+            position: fixed; top: 38px; left: 50%; transform: translateX(-50%);
+            color: rgba(255,255,255,0.5); font-family: sans-serif; font-size: 10px;
+            z-index: 100; pointer-events: none;
         }
     </style>
 </head>
 
 <body>
-    <div id="hint">👆 点击弹跳 | 👆👆 双击重置 | 📌 长按看信息</div>
+    <div id="hint">☝ 双指旋转/缩放 &nbsp;|&nbsp; 底部按钮控制</div>
+    <div id="status"></div>
     <div id="info-label"></div>
+
+    <!-- 底部工具栏 -->
+    <div id="toolbar">
+        <button id="btn-spin"    title="旋转弹跳">🔄</button>
+        <button id="btn-scaleup" title="放大">➕</button>
+        <button id="btn-scaledn" title="缩小">➖</button>
+        <button id="btn-reset"   title="重置">↺</button>
+        <button id="btn-info"    title="信息">ℹ️</button>
+        <button id="btn-autorot" title="自动旋转">▶</button>
+        <button id="btn-wire"    title="线框模式">🔲</button>
+    </div>
 
     <a-scene
         mindar-image="imageTargetSrc: ./targets.mind;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false">
 
-        <a-camera
-            position="0 0 0"
-            look-controls="enabled: false">
-        </a-camera>
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
         <!-- 图片1 -->
         <a-entity mindar-image-target="targetIndex: 0">
-            <a-gltf-model
-                id="model-0"
-                data-info="📚 图书馆模型"
-                src="library.glb"
-                position="0 0 0"
-                rotation="90 0 0"
-                scale="0.005 0.005 0.005">
-            </a-gltf-model>
+            <a-gltf-model id="model-0" data-info="📚 图书馆模型"
+                src="library.glb" position="0 0 0" rotation="90 0 0"
+                scale="0.005 0.005 0.005"></a-gltf-model>
         </a-entity>
 
         <!-- 图片2 -->
         <a-entity mindar-image-target="targetIndex: 1">
-            <a-gltf-model
-                id="model-1"
-                data-info="🗿 绿色头像"
-                src="head-green.glb"
-                position="0 0 0"
-                scale="0.1 0.1 0.1">
-            </a-gltf-model>
+            <a-gltf-model id="model-1" data-info="🗿 绿色头像"
+                src="head-green.glb" position="0 0 0"
+                scale="0.1 0.1 0.1"></a-gltf-model>
         </a-entity>
 
         <!-- 图片3 -->
         <a-entity mindar-image-target="targetIndex: 2">
-            <a-gltf-model
-                id="model-2"
-                data-info="📦 盒子模型"
-                src="box.glb"
-                position="0 0 0"
-                scale="0.1 0.1 0.1">
-            </a-gltf-model>
+            <a-gltf-model id="model-2" data-info="📦 盒子模型"
+                src="box.glb" position="0 0 0"
+                scale="0.1 0.1 0.1"></a-gltf-model>
         </a-entity>
 
         <!-- 图片4 -->
         <a-entity mindar-image-target="targetIndex: 3">
-            <a-gltf-model
-                id="model-3"
-                data-info="⚽ 球体模型"
-                src="ball.glb"
-                position="0 0 0"
-                scale="0.1 0.1 0.1">
-            </a-gltf-model>
+            <a-gltf-model id="model-3" data-info="⚽ 球体模型"
+                src="ball.glb" position="0 0 0"
+                scale="0.1 0.1 0.1"></a-gltf-model>
         </a-entity>
 
     </a-scene>
@@ -106,190 +111,308 @@
         (function () {
             const sceneEl = document.querySelector('a-scene');
             const labelEl = document.getElementById('info-label');
+            const statusEl = document.getElementById('status');
 
-            // 模型数据
             const models = {};
-            const modelStates = {};   // 每个模型的交互状态
-            let activeModel = null;   // 当前被追踪到的模型
+            const states = {};   // origScale, origRot, visible, animId, autoRotId
+            let activeIdx = -1;
 
-            // ---- 场景就绪后收集所有模型引用 ----
+            // ---- 场景就绪 ----
             sceneEl.addEventListener('loaded', function () {
                 for (let i = 0; i < 4; i++) {
                     const el = document.getElementById('model-' + i);
                     if (!el) continue;
                     models[i] = el;
-                    modelStates[i] = {
+                    const s = el.getAttribute('scale');
+                    const r = el.getAttribute('rotation');
+                    states[i] = {
                         info: el.getAttribute('data-info') || ('模型 ' + i),
-                        origScale: el.getAttribute('scale').clone(),
-                        clickCount: 0,
-                        clickTimer: null,
-                        longPressTimer: null,
-                        bounceTimer: null,
-                        visible: false
+                        origScale: { x: s.x, y: s.y, z: s.z },
+                        origRot:   { x: r.x, y: r.y, z: r.z },
+                        visible: false,
+                        animId: null,
+                        autoRotId: null
                     };
                 }
 
-                // ---- 监听每个目标图的出现/消失 ----
                 for (let i = 0; i < 4; i++) {
-                    const targetEl = document.querySelector('[mindar-image-target="targetIndex: ' + i + '"]');
-                    if (targetEl) {
-                        targetEl.addEventListener('targetFound', function () {
-                            modelStates[i].visible = true;
-                            activeModel = i;
-                        });
-                        targetEl.addEventListener('targetLost', function () {
-                            modelStates[i].visible = false;
-                            if (activeModel === i) activeModel = null;
-                            labelEl.classList.remove('visible');
-                        });
-                    }
+                    const t = document.querySelector('[mindar-image-target="targetIndex: ' + i + '"]');
+                    if (!t) continue;
+                    t.addEventListener('targetFound', function () {
+                        states[i].visible = true;
+                        activeIdx = i;
+                        statusEl.textContent = '📍 识别图 ' + (i + 1) + ' 已追踪';
+                    });
+                    t.addEventListener('targetLost', function () {
+                        states[i].visible = false;
+                        if (activeIdx === i) activeIdx = -1;
+                        statusEl.textContent = '';
+                        labelEl.classList.remove('visible');
+                    });
                 }
             });
 
-            // ---- 核心: 屏幕坐标 → 射线检测 → 找到命中的模型 ----
-            function getModelAtScreen(x, y) {
-                const camera = sceneEl.camera;
-                if (!camera) return null;
-
-                // 归一化设备坐标
-                const rect = sceneEl.canvas.getBoundingClientRect();
-                const ndcX = ((x - rect.left) / rect.width)  * 2 - 1;
-                const ndcY = -((y - rect.top)  / rect.height) * 2 + 1;
-
-                const raycaster = new THREE.Raycaster();
-                raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
-
-                // 收集所有模型的三维对象
-                const targets = [];
-                for (let i = 0; i < 4; i++) {
-                    if (models[i] && modelStates[i].visible && models[i].object3D) {
-                        targets.push(models[i].object3D);
-                    }
-                }
-                const intersects = raycaster.intersectObjects(targets, true);
-                if (intersects.length === 0) return null;
-
-                // 追溯到顶层模型元素
-                let obj = intersects[0].object;
-                while (obj) {
-                    for (let i = 0; i < 4; i++) {
-                        if (models[i] && obj === models[i].object3D) return i;
-                    }
-                    obj = obj.parent;
-                }
-                return null;
+            // ==================== 工具函数 ====================
+            function getModel() {
+                if (activeIdx < 0) return null;
+                return models[activeIdx];
+            }
+            function getState() {
+                if (activeIdx < 0) return null;
+                return states[activeIdx];
+            }
+            function cancelAnim() {
+                const st = getState();
+                if (st && st.animId) { cancelAnimationFrame(st.animId); st.animId = null; }
             }
 
-            // ---- 点击/触摸 事件处理 ----
-            function handlePointerDown(e) {
-                const x = e.touches ? e.touches[0].clientX : e.clientX;
-                const y = e.touches ? e.touches[0].clientY : e.clientY;
-                const idx = getModelAtScreen(x, y);
-                if (idx === null) return;
+            // ==================== 双指旋转 & 缩放 ====================
+            (function () {
+                let initDist = 0, initAngle = 0;
+                let initScale = null, initRotY = 0;
+                let gestureActive = false;
 
-                const st = modelStates[idx];
-                // 启动长按计时器
-                clearTimeout(st.longPressTimer);
-                st.longPressTimer = setTimeout(function () {
-                    showInfo(idx);
-                }, 800);
-            }
-
-            function handlePointerUp(e) {
-                const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
-                const y = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
-                const idx = getModelAtScreen(x, y);
-
-                for (let i = 0; i < 4; i++) {
-                    clearTimeout(modelStates[i].longPressTimer);
+                function getMid(e) {
+                    const t0 = e.touches[0], t1 = e.touches[1];
+                    return { x: (t0.clientX + t1.clientX) / 2, y: (t0.clientY + t1.clientY) / 2 };
+                }
+                function getDist(e) {
+                    const t0 = e.touches[0], t1 = e.touches[1];
+                    const dx = t0.clientX - t1.clientX, dy = t0.clientY - t1.clientY;
+                    return Math.sqrt(dx * dx + dy * dy);
+                }
+                function getAngle(e) {
+                    const t0 = e.touches[0], t1 = e.touches[1];
+                    return Math.atan2(t1.clientY - t0.clientY, t1.clientX - t0.clientX) * 180 / Math.PI;
                 }
 
-                if (idx === null) {
-                    labelEl.classList.remove('visible');
-                    return;
+                function onTouchStart(e) {
+                    if (e.touches.length !== 2) return;
+                    const model = getModel();
+                    if (!model) return;
+                    e.preventDefault();
+                    cancelAnim();
+                    gestureActive = true;
+                    initDist = getDist(e);
+                    initAngle = getAngle(e);
+                    const s = model.getAttribute('scale');
+                    const r = model.getAttribute('rotation');
+                    initScale = { x: s.x, y: s.y, z: s.z };
+                    initRotY = r.y;
                 }
 
-                // 单击/双击判断
-                const st = modelStates[idx];
-                st.clickCount++;
-                clearTimeout(st.clickTimer);
-                st.clickTimer = setTimeout(function () {
-                    if (st.clickCount === 1) {
-                        bounce(idx);
-                    } else if (st.clickCount >= 2) {
-                        resetModel(idx);
+                function onTouchMove(e) {
+                    if (!gestureActive || e.touches.length !== 2) return;
+                    e.preventDefault();
+                    const model = getModel();
+                    if (!model) return;
+
+                    // 缩放
+                    const dist = getDist(e);
+                    const ratio = dist / initDist;
+                    model.setAttribute('scale', {
+                        x: initScale.x * ratio,
+                        y: initScale.y * ratio,
+                        z: initScale.z * ratio
+                    });
+
+                    // 旋转
+                    const angle = getAngle(e);
+                    const deltaAngle = angle - initAngle;
+                    model.setAttribute('rotation', {
+                        x: 0, y: initRotY + deltaAngle, z: 0
+                    });
+                }
+
+                function onTouchEnd(e) {
+                    if (e.touches.length < 2) {
+                        gestureActive = false;
+                        initScale = null;
                     }
-                    st.clickCount = 0;
-                }, 300);
-            }
+                }
 
-            // ---- 绑定到 a-scene 的 canvas ----
+                sceneEl.addEventListener('loaded', function () {
+                    setTimeout(function () {
+                        const c = sceneEl.canvas;
+                        c.addEventListener('touchstart', onTouchStart, { passive: false });
+                        c.addEventListener('touchmove',  onTouchMove,  { passive: false });
+                        c.addEventListener('touchend',   onTouchEnd);
+                        c.addEventListener('touchcancel',onTouchEnd);
+                    }, 500);
+                });
+            })();
+
+            // ==================== 鼠标滚轮缩放 (PC) ====================
             sceneEl.addEventListener('loaded', function () {
                 setTimeout(function () {
-                    const canvas = sceneEl.canvas;
-                    canvas.addEventListener('mousedown',  handlePointerDown);
-                    canvas.addEventListener('mouseup',    handlePointerUp);
-                    canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
-                    canvas.addEventListener('touchend',   handlePointerUp);
+                    sceneEl.canvas.addEventListener('wheel', function (e) {
+                        const model = getModel();
+                        if (!model) return;
+                        e.preventDefault();
+                        cancelAnim();
+                        const s = model.getAttribute('scale');
+                        const factor = e.deltaY > 0 ? 0.9 : 1.1;
+                        model.setAttribute('scale', {
+                            x: s.x * factor, y: s.y * factor, z: s.z * factor
+                        });
+                    }, { passive: false });
                 }, 500);
             });
 
-            // ---- 弹跳 ----
-            function bounce(idx) {
-                const el = models[idx];
-                const st = modelStates[idx];
-                if (!el || !st) return;
+            // ==================== 动画: 旋转360° + 弹跳2次 ====================
+            function spinBounce() {
+                const model = getModel();
+                const st = getState();
+                if (!model || !st) return;
+                cancelAnim();
 
-                clearInterval(st.bounceTimer);
-                const orig = {
-                    x: st.origScale.x,
-                    y: st.origScale.y,
-                    z: st.origScale.z
-                };
+                const s = model.getAttribute('scale');
+                const r = model.getAttribute('rotation');
+                const startScale = { x: s.x, y: s.y, z: s.z };
+                const startRotY = r.y;
+                const duration = 1500;  // ms
+                const bounceCount = 2;
+                const bounceAmp = startScale.y * 0.35;
+                const startTime = performance.now();
 
-                let step = 0;
-                const total = 10;
-                const amp = orig.y * 0.4;
-                st.bounceTimer = setInterval(function () {
-                    if (step >= total) {
-                        clearInterval(st.bounceTimer);
-                        el.setAttribute('scale', orig);
-                        return;
-                    }
-                    const t = step / total;
-                    const dy = Math.sin(t * Math.PI) * amp;
-                    el.setAttribute('scale', {
-                        x: orig.x + dy,
-                        y: orig.y + dy,
-                        z: orig.z + dy
+                if (navigator.vibrate) navigator.vibrate(20);
+
+                function step(now) {
+                    const elapsed = now - startTime;
+                    const t = Math.min(elapsed / duration, 1);
+
+                    // 旋转: 从 startRotY 到 startRotY + 360
+                    const rotY = startRotY + t * 360;
+                    model.setAttribute('rotation', { x: r.x, y: rotY, z: r.z });
+
+                    // 弹跳: 2 个完整正弦波
+                    const bounce = Math.sin(t * Math.PI * 2 * bounceCount) * bounceAmp * (1 - t);
+                    model.setAttribute('scale', {
+                        x: startScale.x + bounce,
+                        y: startScale.y + bounce,
+                        z: startScale.z + bounce
                     });
-                    step++;
-                }, 50);
 
-                if (navigator.vibrate) navigator.vibrate(15);
+                    if (t < 1) {
+                        st.animId = requestAnimationFrame(step);
+                    } else {
+                        model.setAttribute('scale', startScale);
+                        model.setAttribute('rotation', { x: r.x, y: startRotY + 360, z: r.z });
+                        st.animId = null;
+                        if (navigator.vibrate) navigator.vibrate(15);
+                    }
+                }
+                st.animId = requestAnimationFrame(step);
             }
 
-            // ---- 重置 ----
-            function resetModel(idx) {
-                const st = modelStates[idx];
-                if (!st) return;
-                clearInterval(st.bounceTimer);
-                st.clickCount = 0;
-                models[idx].setAttribute('scale', st.origScale);
+            // ==================== 缩放步进 ====================
+            function scaleStep(factor) {
+                const model = getModel();
+                if (!model) return;
+                cancelAnim();
+                const s = model.getAttribute('scale');
+                model.setAttribute('scale', {
+                    x: s.x * factor, y: s.y * factor, z: s.z * factor
+                });
+                if (navigator.vibrate) navigator.vibrate(10);
+            }
+
+            // ==================== 重置 ====================
+            function resetModel() {
+                const model = getModel();
+                const st = getState();
+                if (!model || !st) return;
+                cancelAnim();
+                if (st.autoRotId) { cancelAnimationFrame(st.autoRotId); st.autoRotId = null; }
+                model.setAttribute('scale', st.origScale);
+                model.setAttribute('rotation', st.origRot);
+                document.getElementById('btn-autorot').classList.remove('active');
+                document.getElementById('btn-wire').classList.remove('active');
                 if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
             }
 
-            // ---- 长按信息标签 ----
-            function showInfo(idx) {
-                const st = modelStates[idx];
+            // ==================== 信息 ====================
+            function showInfo() {
+                const st = getState();
                 if (!st) return;
                 labelEl.textContent = st.info;
                 labelEl.classList.add('visible');
-                if (navigator.vibrate) navigator.vibrate(30);
-                setTimeout(function () {
+                if (navigator.vibrate) navigator.vibrate(25);
+                clearTimeout(st._infoTimer);
+                st._infoTimer = setTimeout(function () {
                     labelEl.classList.remove('visible');
                 }, 2000);
             }
+
+            // ==================== 自动旋转 ====================
+            function toggleAutoRot() {
+                const model = getModel();
+                const st = getState();
+                if (!model || !st) return;
+                const btn = document.getElementById('btn-autorot');
+
+                if (st.autoRotId) {
+                    cancelAnimationFrame(st.autoRotId);
+                    st.autoRotId = null;
+                    btn.classList.remove('active');
+                    return;
+                }
+
+                btn.classList.add('active');
+                cancelAnim();
+                function rotate() {
+                    const r = model.getAttribute('rotation');
+                    model.setAttribute('rotation', { x: r.x, y: r.y + 0.8, z: r.z });
+                    st.autoRotId = requestAnimationFrame(rotate);
+                }
+                st.autoRotId = requestAnimationFrame(rotate);
+            }
+
+            // ==================== 线框模式 ====================
+            function toggleWireframe() {
+                const model = getModel();
+                const st = getState();
+                if (!model || !st) return;
+                const btn = document.getElementById('btn-wire');
+
+                // 遍历模型的 mesh 子节点
+                model.object3D.traverse(function (node) {
+                    if (node.isMesh && node.material) {
+                        if (Array.isArray(node.material)) {
+                            node.material.forEach(function (m) {
+                                m.wireframe = !m.wireframe;
+                            });
+                        } else {
+                            node.material.wireframe = !node.material.wireframe;
+                        }
+                    }
+                });
+
+                if (!st._wireframe) {
+                    st._wireframe = true;
+                    btn.classList.add('active');
+                } else {
+                    st._wireframe = false;
+                    btn.classList.remove('active');
+                }
+                if (navigator.vibrate) navigator.vibrate(10);
+            }
+
+            // ==================== UI 按钮绑定 ====================
+            document.getElementById('btn-spin').addEventListener('click', spinBounce);
+            document.getElementById('btn-spin').addEventListener('touchend', function (e) { e.preventDefault(); spinBounce(); });
+            document.getElementById('btn-scaleup').addEventListener('click', function () { scaleStep(1.2); });
+            document.getElementById('btn-scaleup').addEventListener('touchend', function (e) { e.preventDefault(); scaleStep(1.2); });
+            document.getElementById('btn-scaledn').addEventListener('click', function () { scaleStep(0.8); });
+            document.getElementById('btn-scaledn').addEventListener('touchend', function (e) { e.preventDefault(); scaleStep(0.8); });
+            document.getElementById('btn-reset').addEventListener('click', resetModel);
+            document.getElementById('btn-reset').addEventListener('touchend', function (e) { e.preventDefault(); resetModel(); });
+            document.getElementById('btn-info').addEventListener('click', showInfo);
+            document.getElementById('btn-info').addEventListener('touchend', function (e) { e.preventDefault(); showInfo(); });
+            document.getElementById('btn-autorot').addEventListener('click', toggleAutoRot);
+            document.getElementById('btn-autorot').addEventListener('touchend', function (e) { e.preventDefault(); toggleAutoRot(); });
+            document.getElementById('btn-wire').addEventListener('click', toggleWireframe);
+            document.getElementById('btn-wire').addEventListener('touchend', function (e) { e.preventDefault(); toggleWireframe(); });
         })();
     </script>
 </body>
