@@ -1,0 +1,342 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+        /* 信息标签样式 */
+        #info-label {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 25px;
+            font-family: sans-serif;
+            font-size: 16px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 100;
+        }
+        #info-label.visible {
+            opacity: 1;
+        }
+
+        /* 模型切换按钮 */
+        #switch-btns {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+            pointer-events: none;
+        }
+        #switch-btns.active {
+            pointer-events: auto;
+        }
+        .switch-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.7);
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        #switch-btns.active .switch-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 提示文字 */
+        #hint {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.7);
+            font-family: sans-serif;
+            font-size: 13px;
+            background: rgba(0,0,0,0.5);
+            padding: 6px 16px;
+            border-radius: 15px;
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 提示 -->
+    <div id="hint">👆 点击模型变色 | 👆👆 双击重置 | ↔ 滑动切换 | 📌 长按看信息</div>
+    <!-- 信息标签 -->
+    <div id="info-label"></div>
+    <!-- 模型切换按钮 -->
+    <div id="switch-btns">
+        <button class="switch-btn" id="btn-prev">◀</button>
+        <button class="switch-btn" id="btn-next">▶</button>
+    </div>
+
+    <a-scene
+        mindar-image="imageTargetSrc: ./targets.mind;"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false">
+
+        <a-camera
+            position="0 0 0"
+            look-controls="enabled: false">
+        </a-camera>
+
+        <!-- 图片1: library 系列 -->
+        <a-entity mindar-image-target="targetIndex: 0">
+            <a-gltf-model
+                id="model-0"
+                src="library.glb"
+                position="0 0 0"
+                rotation="90 0 0"
+                scale="0.005 0.005 0.005"
+                gesture-interactive="modelIndex: 0; modelSrcs: library.glb,head-green.glb,box.glb,ball.glb; modelPositions: 0 0 0|0 0 0|0 0 0|0 0 0; modelRotations: 90 0 0|0 0 0|0 0 0|0 0 0; modelScales: 0.005 0.005 0.005|0.1 0.1 0.1|0.1 0.1 0.1|0.1 0.1 0.1; infoText: 📚 图书馆模型">
+            </a-gltf-model>
+        </a-entity>
+
+        <!-- 图片2: head 系列 -->
+        <a-entity mindar-image-target="targetIndex: 1">
+            <a-gltf-model
+                id="model-1"
+                src="head-green.glb"
+                position="0 0 0"
+                scale="0.1 0.1 0.1"
+                gesture-interactive="modelIndex: 1; modelSrcs: head-green.glb,library.glb,box.glb,ball.glb; modelPositions: 0 0 0|0 0 0|0 0 0|0 0 0; modelRotations: 0 0 0|90 0 0|0 0 0|0 0 0; modelScales: 0.1 0.1 0.1|0.005 0.005 0.005|0.1 0.1 0.1|0.1 0.1 0.1; infoText: 🗿 绿色头像">
+            </a-gltf-model>
+        </a-entity>
+
+        <!-- 图片3: box 系列 -->
+        <a-entity mindar-image-target="targetIndex: 2">
+            <a-gltf-model
+                id="model-2"
+                src="box.glb"
+                position="0 0 0"
+                scale="0.1 0.1 0.1"
+                gesture-interactive="modelIndex: 2; modelSrcs: box.glb,ball.glb,library.glb,head-green.glb; modelPositions: 0 0 0|0 0 0|0 0 0|0 0 0; modelRotations: 0 0 0|0 0 0|90 0 0|0 0 0; modelScales: 0.1 0.1 0.1|0.1 0.1 0.1|0.005 0.005 0.005|0.1 0.1 0.1; infoText: 📦 盒子模型">
+            </a-gltf-model>
+        </a-entity>
+
+        <!-- 图片4: ball 系列 -->
+        <a-entity mindar-image-target="targetIndex: 3">
+            <a-gltf-model
+                id="model-3"
+                src="ball.glb"
+                position="0 0 0"
+                scale="0.1 0.1 0.1"
+                gesture-interactive="modelIndex: 3; modelSrcs: ball.glb,box.glb,head-green.glb,library.glb; modelPositions: 0 0 0|0 0 0|0 0 0|0 0 0; modelRotations: 0 0 0|0 0 0|0 0 0|90 0 0; modelScales: 0.1 0.1 0.1|0.1 0.1 0.1|0.1 0.1 0.1|0.005 0.005 0.005; infoText: ⚽ 球体模型">
+            </a-gltf-model>
+        </a-entity>
+
+    </a-scene>
+
+    <script>
+        // ========================================
+        // 注册自定义交互组件
+        // ========================================
+        AFRAME.registerComponent('gesture-interactive', {
+            schema: {
+                modelIndex:    { type: 'int',    default: 0 },
+                modelSrcs:     { type: 'string', default: '' },
+                modelPositions:{ type: 'string', default: '' },
+                modelRotations:{ type: 'string', default: '' },
+                modelScales:   { type: 'string', default: '' },
+                infoText:      { type: 'string', default: '' }
+            },
+
+            init: function () {
+                this.currentVariant = 0;
+
+                // 解析配置
+                this.srcs      = this.data.modelSrcs.split(',').map(s => s.trim());
+                this.positions = this.data.modelPositions.split('|').map(s => s.trim());
+                this.rotations = this.data.modelRotations.split('|').map(s => s.trim());
+                this.scales    = this.data.modelScales.split('|').map(s => s.trim());
+
+                this.originalColor = null;
+                this.clickCount = 0;
+                this.clickTimer = null;
+                this.longPressTimer = null;
+                this.touchStartPos = null;
+                this.isModelVisible = false;
+
+                const el = this.el;
+
+                // ---- 目标出现/消失 ----
+                const targetEntity = el.parentNode;
+                if (targetEntity) {
+                    targetEntity.addEventListener('targetFound', () => {
+                        this.isModelVisible = true;
+                        document.getElementById('switch-btns').classList.add('active');
+                    });
+                    targetEntity.addEventListener('targetLost', () => {
+                        this.isModelVisible = false;
+                        document.getElementById('switch-btns').classList.remove('active');
+                        this.hideInfo();
+                    });
+                }
+
+                // ---- 点击变色 ----
+                el.addEventListener('click', (e) => {
+                    if (!this.isModelVisible) return;
+                    this.clickCount++;
+                    clearTimeout(this.clickTimer);
+                    this.clickTimer = setTimeout(() => {
+                        if (this.clickCount === 1) {
+                            this.flashColor();       // 单击 → 变色
+                        } else if (this.clickCount >= 2) {
+                            this.resetAppearance();  // 双击 → 重置
+                        }
+                        this.clickCount = 0;
+                    }, 300);
+                });
+
+                // ---- 长按显示信息 ----
+                el.addEventListener('mousedown', (e) => {
+                    if (!this.isModelVisible) return;
+                    this.longPressTimer = setTimeout(() => {
+                        this.showInfo();
+                    }, 800);
+                });
+                el.addEventListener('mouseup', () => {
+                    clearTimeout(this.longPressTimer);
+                });
+                el.addEventListener('mouseleave', () => {
+                    clearTimeout(this.longPressTimer);
+                    this.hideInfo();
+                });
+
+                // ---- 触摸版长按 ----
+                el.addEventListener('touchstart', (e) => {
+                    if (!this.isModelVisible) return;
+                    this.touchStartPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                    this.longPressTimer = setTimeout(() => {
+                        this.showInfo();
+                    }, 800);
+                });
+                el.addEventListener('touchend', (e) => {
+                    clearTimeout(this.longPressTimer);
+                    if (this.touchStartPos && e.changedTouches.length > 0) {
+                        const dx = e.changedTouches[0].clientX - this.touchStartPos.x;
+                        const dy = e.changedTouches[0].clientY - this.touchStartPos.y;
+                        // 如果移动超过阈值，当作滑动
+                        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+                            if (dx > 0) {
+                                this.switchModel(-1); // 右滑 → 上一个
+                            } else {
+                                this.switchModel(1);  // 左滑 → 下一个
+                            }
+                        }
+                    }
+                    this.touchStartPos = null;
+                    this.hideInfo();
+                });
+            },
+
+            // ---- 变色闪烁 ----
+            flashColor: function () {
+                const el = this.el;
+                const colors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44', '#ff44ff', '#44ffff', '#ff8800'];
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                el.setAttribute('material', 'color', color);
+                setTimeout(() => {
+                    el.removeAttribute('material');
+                }, 600);
+            },
+
+            // ---- 重置外观 ----
+            resetAppearance: function () {
+                const el = this.el;
+                el.removeAttribute('material');
+                // 回到默认变体
+                this.currentVariant = 0;
+                this.applyVariant(0);
+            },
+
+            // ---- 显示信息标签 ----
+            showInfo: function () {
+                const label = document.getElementById('info-label');
+                label.textContent = this.data.infoText;
+                label.classList.add('visible');
+                // 震动反馈（移动端）
+                if (navigator.vibrate) {
+                    navigator.vibrate(30);
+                }
+            },
+
+            hideInfo: function () {
+                document.getElementById('info-label').classList.remove('visible');
+            },
+
+            // ---- 切换模型 ----
+            switchModel: function (direction) {
+                const len = this.srcs.length;
+                this.currentVariant = (this.currentVariant + direction + len) % len;
+                this.applyVariant(this.currentVariant);
+            },
+
+            applyVariant: function (idx) {
+                const el = this.el;
+                // 切换模型源
+                el.setAttribute('src', this.srcs[idx]);
+                // 切换位置
+                if (this.positions[idx]) {
+                    el.setAttribute('position', this.positions[idx]);
+                }
+                // 切换旋转
+                if (this.rotations[idx]) {
+                    el.setAttribute('rotation', this.rotations[idx]);
+                }
+                // 切换缩放
+                if (this.scales[idx]) {
+                    el.setAttribute('scale', this.scales[idx]);
+                }
+                // 短暂闪烁提示
+                this.flashColor();
+            }
+        });
+
+        // ========================================
+        // UI 按钮绑定
+        // ========================================
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            // 找到当前可见的模型并切换
+            const models = document.querySelectorAll('[gesture-interactive]');
+            models.forEach(m => {
+                if (m.components['gesture-interactive'] &&
+                    m.components['gesture-interactive'].isModelVisible) {
+                    m.components['gesture-interactive'].switchModel(-1);
+                }
+            });
+        });
+
+        document.getElementById('btn-next').addEventListener('click', () => {
+            const models = document.querySelectorAll('[gesture-interactive]');
+            models.forEach(m => {
+                if (m.components['gesture-interactive'] &&
+                    m.components['gesture-interactive'].isModelVisible) {
+                    m.components['gesture-interactive'].switchModel(1);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
