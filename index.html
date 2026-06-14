@@ -26,6 +26,27 @@
         }
         #info-label.visible { opacity: 1; }
 
+        /* ---- 旋转轴工具栏 ---- */
+        #toolbar-rot {
+            position: fixed; bottom: 68px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 4px; align-items: center; z-index: 100;
+            background: rgba(0,0,0,0.55); padding: 5px 10px; border-radius: 22px;
+        }
+        #toolbar-rot .axis-label {
+            color: rgba(255,255,255,0.6); font-family: sans-serif;
+            font-size: 10px; font-weight: bold; width: 14px; text-align: center;
+        }
+        .rot-btn {
+            width: 30px; height: 30px; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.08); color: #fff;
+            font-size: 13px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.12s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .rot-btn:active { background: rgba(255,255,255,0.35); }
+
         /* ---- 底部工具栏 ---- */
         #toolbar {
             position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
@@ -55,11 +76,24 @@
 </head>
 
 <body>
-    <div id="hint">☝ 双指旋转/缩放 &nbsp;|&nbsp; 底部按钮控制</div>
+    <div id="hint">☝ 双指旋转Y/缩放 &nbsp;|&nbsp; 按钮控制XYZ轴</div>
     <div id="status"></div>
     <div id="info-label"></div>
 
-    <!-- 底部工具栏 -->
+    <!-- 底部工具栏: 旋转轴控制 -->
+    <div id="toolbar-rot">
+        <span class="axis-label">X</span>
+        <button class="rot-btn" id="btn-rx-n" title="绕X轴负转">↺</button>
+        <button class="rot-btn" id="btn-rx-p" title="绕X轴正转">↻</button>
+        <span class="axis-label">Y</span>
+        <button class="rot-btn" id="btn-ry-n" title="绕Y轴负转">↺</button>
+        <button class="rot-btn" id="btn-ry-p" title="绕Y轴正转">↻</button>
+        <span class="axis-label">Z</span>
+        <button class="rot-btn" id="btn-rz-n" title="绕Z轴负转">↺</button>
+        <button class="rot-btn" id="btn-rz-p" title="绕Z轴正转">↻</button>
+    </div>
+
+    <!-- 底部工具栏: 功能按钮 -->
     <div id="toolbar">
         <button id="btn-spin"    title="旋转弹跳">🔄</button>
         <button id="btn-scaleup" title="放大">➕</button>
@@ -166,16 +200,12 @@
                 if (st && st.animId) { cancelAnimationFrame(st.animId); st.animId = null; }
             }
 
-            // ==================== 双指旋转 & 缩放 ====================
+            // ==================== 双指旋转(Y轴) & 缩放 ====================
             (function () {
                 let initDist = 0, initAngle = 0;
-                let initScale = null, initRotY = 0;
+                let initScale = null, initRot = null;
                 let gestureActive = false;
 
-                function getMid(e) {
-                    const t0 = e.touches[0], t1 = e.touches[1];
-                    return { x: (t0.clientX + t1.clientX) / 2, y: (t0.clientY + t1.clientY) / 2 };
-                }
                 function getDist(e) {
                     const t0 = e.touches[0], t1 = e.touches[1];
                     const dx = t0.clientX - t1.clientX, dy = t0.clientY - t1.clientY;
@@ -198,7 +228,7 @@
                     const s = model.getAttribute('scale');
                     const r = model.getAttribute('rotation');
                     initScale = { x: s.x, y: s.y, z: s.z };
-                    initRotY = r.y;
+                    initRot   = { x: r.x, y: r.y, z: r.z };
                 }
 
                 function onTouchMove(e) {
@@ -216,11 +246,13 @@
                         z: initScale.z * ratio
                     });
 
-                    // 旋转
+                    // Y轴旋转 (保留X和Z不变)
                     const angle = getAngle(e);
                     const deltaAngle = angle - initAngle;
                     model.setAttribute('rotation', {
-                        x: 0, y: initRotY + deltaAngle, z: 0
+                        x: initRot.x,
+                        y: initRot.y + deltaAngle,
+                        z: initRot.z
                     });
                 }
 
@@ -228,6 +260,7 @@
                     if (e.touches.length < 2) {
                         gestureActive = false;
                         initScale = null;
+                        initRot = null;
                     }
                 }
 
@@ -259,7 +292,7 @@
                 }, 500);
             });
 
-            // ==================== 动画: 旋转360° + 弹跳2次 ====================
+            // ==================== 动画: 旋转360°(Y轴) + 弹跳2次 ====================
             function spinBounce() {
                 const model = getModel();
                 const st = getState();
@@ -269,8 +302,8 @@
                 const s = model.getAttribute('scale');
                 const r = model.getAttribute('rotation');
                 const startScale = { x: s.x, y: s.y, z: s.z };
-                const startRotY = r.y;
-                const duration = 1500;  // ms
+                const startRot = { x: r.x, y: r.y, z: r.z };
+                const duration = 1500;
                 const bounceCount = 2;
                 const bounceAmp = startScale.y * 0.35;
                 const startTime = performance.now();
@@ -280,13 +313,13 @@
                 function step(now) {
                     const elapsed = now - startTime;
                     const t = Math.min(elapsed / duration, 1);
-
-                    // 旋转: 从 startRotY 到 startRotY + 360
-                    const rotY = startRotY + t * 360;
-                    model.setAttribute('rotation', { x: r.x, y: rotY, z: r.z });
-
-                    // 弹跳: 2 个完整正弦波
                     const bounce = Math.sin(t * Math.PI * 2 * bounceCount) * bounceAmp * (1 - t);
+
+                    model.setAttribute('rotation', {
+                        x: startRot.x + t * 360,   // X轴也转360° 
+                        y: startRot.y + t * 360,
+                        z: startRot.z
+                    });
                     model.setAttribute('scale', {
                         x: startScale.x + bounce,
                         y: startScale.y + bounce,
@@ -297,7 +330,11 @@
                         st.animId = requestAnimationFrame(step);
                     } else {
                         model.setAttribute('scale', startScale);
-                        model.setAttribute('rotation', { x: r.x, y: startRotY + 360, z: r.z });
+                        model.setAttribute('rotation', {
+                            x: startRot.x + 360,
+                            y: startRot.y + 360,
+                            z: startRot.z
+                        });
                         st.animId = null;
                         if (navigator.vibrate) navigator.vibrate(15);
                     }
@@ -362,10 +399,26 @@
                 cancelAnim();
                 function rotate() {
                     const r = model.getAttribute('rotation');
-                    model.setAttribute('rotation', { x: r.x, y: r.y + 0.8, z: r.z });
+                    model.setAttribute('rotation', {
+                        x: r.x + 0.3,
+                        y: r.y + 0.6,
+                        z: r.z + 0.2
+                    });
                     st.autoRotId = requestAnimationFrame(rotate);
                 }
                 st.autoRotId = requestAnimationFrame(rotate);
+            }
+
+            // ==================== XYZ 轴旋转 (30°步进) ====================
+            function rotateAxis(axis, deg) {
+                const model = getModel();
+                if (!model) return;
+                cancelAnim();
+                const r = model.getAttribute('rotation');
+                const rot = { x: r.x, y: r.y, z: r.z };
+                rot[axis] += deg;
+                model.setAttribute('rotation', rot);
+                if (navigator.vibrate) navigator.vibrate(10);
             }
 
             // ==================== 线框模式 ====================
@@ -399,20 +452,29 @@
             }
 
             // ==================== UI 按钮绑定 ====================
-            document.getElementById('btn-spin').addEventListener('click', spinBounce);
-            document.getElementById('btn-spin').addEventListener('touchend', function (e) { e.preventDefault(); spinBounce(); });
-            document.getElementById('btn-scaleup').addEventListener('click', function () { scaleStep(1.2); });
-            document.getElementById('btn-scaleup').addEventListener('touchend', function (e) { e.preventDefault(); scaleStep(1.2); });
-            document.getElementById('btn-scaledn').addEventListener('click', function () { scaleStep(0.8); });
-            document.getElementById('btn-scaledn').addEventListener('touchend', function (e) { e.preventDefault(); scaleStep(0.8); });
-            document.getElementById('btn-reset').addEventListener('click', resetModel);
-            document.getElementById('btn-reset').addEventListener('touchend', function (e) { e.preventDefault(); resetModel(); });
-            document.getElementById('btn-info').addEventListener('click', showInfo);
-            document.getElementById('btn-info').addEventListener('touchend', function (e) { e.preventDefault(); showInfo(); });
-            document.getElementById('btn-autorot').addEventListener('click', toggleAutoRot);
-            document.getElementById('btn-autorot').addEventListener('touchend', function (e) { e.preventDefault(); toggleAutoRot(); });
-            document.getElementById('btn-wire').addEventListener('click', toggleWireframe);
-            document.getElementById('btn-wire').addEventListener('touchend', function (e) { e.preventDefault(); toggleWireframe(); });
+            function bind(id, handler) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('click', handler);
+                el.addEventListener('touchend', function (e) { e.preventDefault(); handler(); });
+            }
+
+            // XYZ 旋转
+            bind('btn-rx-n', function () { rotateAxis('x', -30); });
+            bind('btn-rx-p', function () { rotateAxis('x',  30); });
+            bind('btn-ry-n', function () { rotateAxis('y', -30); });
+            bind('btn-ry-p', function () { rotateAxis('y',  30); });
+            bind('btn-rz-n', function () { rotateAxis('z', -30); });
+            bind('btn-rz-p', function () { rotateAxis('z',  30); });
+
+            // 功能按钮
+            bind('btn-spin',    spinBounce);
+            bind('btn-scaleup', function () { scaleStep(1.2); });
+            bind('btn-scaledn', function () { scaleStep(0.8); });
+            bind('btn-reset',   resetModel);
+            bind('btn-info',    showInfo);
+            bind('btn-autorot', toggleAutoRot);
+            bind('btn-wire',    toggleWireframe);
         })();
     </script>
 </body>
