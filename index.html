@@ -137,11 +137,13 @@
                 scale="0.1 0.1 0.1"></a-gltf-model>
         </a-entity>
 
-        <!-- 图片4 -->
+        <!-- 图片4: 骨骼动画模型 -->
         <a-entity mindar-image-target="targetIndex: 3">
-            <a-gltf-model id="model-3" data-info="⚽ 球体模型"
+            <a-gltf-model id="model-3" data-info="💀 动画模型"
                 src="dying.glb" position="0 0 0"
-                scale="0.1 0.1 0.1"></a-gltf-model>
+                scale="0.1 0.1 0.1"
+                animation-mixer="loop: once">
+            </a-gltf-model>
         </a-entity>
 
         <!-- 图片5: 骨骼动画模型 -->
@@ -441,19 +443,41 @@
             function playAnim() {
                 const model = getModel();
                 if (!model) return;
-                const mixComp = model.components['animation-mixer'];
-                if (!mixComp || !mixComp.mixer) return;
 
-                // 用 Three.js 原生 API: 停止所有 → 重新播放第一个动画
-                const mixer = mixComp.mixer;
-                mixer.stopAllAction();
-                const clips = model.components['animation-mixer'].animations || mixer._actions.map(a => a.getClip());
-                if (clips.length > 0) {
-                    const action = mixer.clipAction(clips[0]);
-                    action.reset();
-                    action.play();
+                // 方法1: 用 animation-mixer 组件
+                const mixComp = model.components['animation-mixer'];
+                if (mixComp && mixComp.mixer && mixComp.animations && mixComp.animations.length > 0) {
+                    mixComp.mixer.stopAllAction();
+                    mixComp.animations.forEach(function (clip) {
+                        var act = mixComp.mixer.clipAction(clip);
+                        act.reset();
+                        act.play();
+                    });
                     if (navigator.vibrate) navigator.vibrate(20);
+                    return;
                 }
+
+                // 方法2: 直接从模型 object3D 获取动画 (fallback)
+                var obj3D = model.getObject3D('mesh');
+                if (!obj3D || !obj3D.animations || obj3D.animations.length === 0) return;
+
+                if (!model._fallbackMixer) {
+                    model._fallbackMixer = new THREE.AnimationMixer(obj3D);
+                    model._fbTicking = true;
+                    (function tick() {
+                        if (!model._fallbackMixer || !model._fbTicking) return;
+                        model._fallbackMixer.update(0.016);
+                        requestAnimationFrame(tick);
+                    })();
+                }
+                model._fallbackMixer.stopAllAction();
+                var clips = obj3D.animations;
+                for (var i = 0; i < clips.length; i++) {
+                    var act = model._fallbackMixer.clipAction(clips[i]);
+                    act.reset();
+                    act.play();
+                }
+                if (navigator.vibrate) navigator.vibrate(20);
             }
 
             // ==================== 线框模式 ====================
