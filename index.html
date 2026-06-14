@@ -1,4 +1,4 @@
-<html>
+﻿<html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 
@@ -117,28 +117,28 @@
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
         <!-- 图片1 -->
-        <a-entity mindar-image-target="targetIndex: 0">
+        <a-entity mindar-image-target="targetIndex: 0" smooth-ar>
             <a-gltf-model id="model-0" data-info="📚 图书馆模型"
                 src="library.glb" position="0 0 0" rotation="90 0 0"
                 scale="0.005 0.005 0.005"></a-gltf-model>
         </a-entity>
 
         <!-- 图片2 -->
-        <a-entity mindar-image-target="targetIndex: 1">
+        <a-entity mindar-image-target="targetIndex: 1" smooth-ar>
             <a-gltf-model id="model-1" data-info="🗿 绿色头像"
                 src="head-green.glb" position="0 0 0"
                 scale="0.1 0.1 0.1"></a-gltf-model>
         </a-entity>
 
         <!-- 图片3 -->
-        <a-entity mindar-image-target="targetIndex: 2">
+        <a-entity mindar-image-target="targetIndex: 2" smooth-ar>
             <a-gltf-model id="model-2" data-info="📦 盒子模型"
                 src="box.glb" position="0 0 0"
                 scale="0.1 0.1 0.1"></a-gltf-model>
         </a-entity>
 
         <!-- 图片4: 骨骼动画模型 -->
-        <a-entity mindar-image-target="targetIndex: 3">
+        <a-entity mindar-image-target="targetIndex: 3" smooth-ar="posFactor: 0.2; rotFactor: 0.3; minDelta: 0.0003">
             <a-gltf-model id="model-3" data-info="💀 动画模型"
                 src="dying.glb" position="0 0 0"
                 scale="0.1 0.1 0.1"
@@ -147,7 +147,7 @@
         </a-entity>
 
         <!-- 图片5: 骨骼动画模型 -->
-        <a-entity mindar-image-target="targetIndex: 4">
+        <a-entity mindar-image-target="targetIndex: 4" smooth-ar="posFactor: 0.2; rotFactor: 0.3; minDelta: 0.0003">
             <a-gltf-model id="model-4" data-info="💀 动画模型"
                 src="dying.glb" position="0 0 0"
                 scale="0.1 0.1 0.1"
@@ -158,6 +158,64 @@
     </a-scene>
 
     <script>
+        // ==================== AR 追踪平滑组件 ====================
+        // 对 mind-ar 追踪到的位置/旋转做低通滤波，消除高频抖动
+        AFRAME.registerComponent('smooth-ar', {
+            schema: {
+                posFactor:  { default: 0.25 },  // 位置平滑因子 (越小越平滑，延迟越大)
+                rotFactor:  { default: 0.35 },  // 旋转平滑因子
+                minDelta:   { default: 0.0005 } // 低于此位移视为静止，直接锁定
+            },
+            init: function () {
+                this.smoothedPos = new THREE.Vector3();
+                this.smoothedRot = new THREE.Vector3();
+                this.rawPos = new THREE.Vector3();
+                this.rawRot = new THREE.Vector3();
+                this.initialized = false;
+                this.frameCount = 0;
+            },
+            tick: function () {
+                var el = this.el;
+                var pos = el.getAttribute('position');
+                var rot = el.getAttribute('rotation');
+
+                if (!this.initialized) {
+                    this.smoothedPos.set(pos.x, pos.y, pos.z);
+                    this.smoothedRot.set(rot.x, rot.y, rot.z);
+                    this.initialized = true;
+                    return;
+                }
+
+                this.rawPos.set(pos.x, pos.y, pos.z);
+                this.rawRot.set(rot.x, rot.y, rot.z);
+
+                var pf = this.data.posFactor;
+                var rf = this.data.rotFactor;
+
+                // 计算位移量，低于阈值直接锁定（消除微抖动）
+                var dx = this.rawPos.x - this.smoothedPos.x;
+                var dy = this.rawPos.y - this.smoothedPos.y;
+                var dz = this.rawPos.z - this.smoothedPos.z;
+                var dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                if (dist < this.data.minDelta) {
+                    // 微抖动，保持上次位置
+                    el.setAttribute('position', this.smoothedPos);
+                } else {
+                    this.smoothedPos.x += dx * pf;
+                    this.smoothedPos.y += dy * pf;
+                    this.smoothedPos.z += dz * pf;
+                    el.setAttribute('position', this.smoothedPos);
+                }
+
+                // 旋转平滑
+                this.smoothedRot.x += (this.rawRot.x - this.smoothedRot.x) * rf;
+                this.smoothedRot.y += (this.rawRot.y - this.smoothedRot.y) * rf;
+                this.smoothedRot.z += (this.rawRot.z - this.smoothedRot.z) * rf;
+                el.setAttribute('rotation', this.smoothedRot);
+            }
+        });
+
         (function () {
             const sceneEl = document.querySelector('a-scene');
             const labelEl = document.getElementById('info-label');
@@ -464,9 +522,13 @@
                 if (!model._fallbackMixer) {
                     model._fallbackMixer = new THREE.AnimationMixer(obj3D);
                     model._fbTicking = true;
+                    model._fbLastTime = performance.now();
                     (function tick() {
                         if (!model._fallbackMixer || !model._fbTicking) return;
-                        model._fallbackMixer.update(0.016);
+                        var now = performance.now();
+                        var delta = Math.min((now - model._fbLastTime) / 1000, 0.1); // 上限100ms防跳帧
+                        model._fbLastTime = now;
+                        model._fallbackMixer.update(delta);
                         requestAnimationFrame(tick);
                     })();
                 }
