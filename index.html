@@ -149,7 +149,7 @@
             <a-gltf-model id="model-4" data-info="💀 动画模型"
                 src="dying.glb" position="0 0 0"
                 scale="0.1 0.1 0.1"
-                animation-mixer>
+                animation-mixer="loop: once">
             </a-gltf-model>
         </a-entity>
 
@@ -441,11 +441,17 @@
             function playAnim() {
                 const model = getModel();
                 if (!model) return;
-                // animation-mixer 组件: 重新开始播放
-                var mixer = model.components['animation-mixer'];
-                if (mixer) {
-                    mixer.stopAction();
-                    mixer.playAction();
+                const mixComp = model.components['animation-mixer'];
+                if (!mixComp || !mixComp.mixer) return;
+
+                // 用 Three.js 原生 API: 停止所有 → 重新播放第一个动画
+                const mixer = mixComp.mixer;
+                mixer.stopAllAction();
+                const clips = model.components['animation-mixer'].animations || mixer._actions.map(a => a.getClip());
+                if (clips.length > 0) {
+                    const action = mixer.clipAction(clips[0]);
+                    action.reset();
+                    action.play();
                     if (navigator.vibrate) navigator.vibrate(20);
                 }
             }
